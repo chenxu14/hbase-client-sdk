@@ -54,6 +54,7 @@ public class HBaseClientImpl extends BaseOP {
         LOG.info("successfully init hot tables: " + hottables);
       }
     }
+    super.initHotTable();
   }
 
   public static HBaseClientImpl getInstance() {

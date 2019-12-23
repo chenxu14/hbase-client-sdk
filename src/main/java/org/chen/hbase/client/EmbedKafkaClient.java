@@ -60,7 +60,7 @@ public class EmbedKafkaClient {
       producer.flush();
       res.get();
     } catch (Exception e) {
-      hbaseClient.exceptionCallback(e);
+      hbaseClient.exceptionCallback(tableName, e);
     } finally {
       bb.release();
     }
@@ -91,7 +91,7 @@ public class EmbedKafkaClient {
         }
       });
     } catch (IOException e) {
-      hbaseClient.exceptionCallback(e);
+      hbaseClient.exceptionCallback(tableName, e);
     }
   }
 
@@ -134,7 +134,7 @@ public class EmbedKafkaClient {
         }
       }
     } catch (Exception e) {
-      hbaseClient.exceptionCallback(e);
+      hbaseClient.exceptionCallback(tableName, e);
     }
   }
 

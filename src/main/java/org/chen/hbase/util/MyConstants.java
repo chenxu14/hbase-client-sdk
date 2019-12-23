@@ -9,6 +9,7 @@ public final class MyConstants {
    */
   public static final String CLUSTER_MANAGED = "hbase.cluster.managed";
   public static final boolean CLUSTER_MANAGED_DEFAULT = true;
+
   /**
    * when connection setup, these table instance will create and cached
    */
@@ -32,4 +33,10 @@ public final class MyConstants {
   public static final String TABLE_PREFIX = "table_";
   public static final String CLUSTER_PREFIX = "cluster_";
   public static final String APPKEY = "org.chen.service.hbase.hbaseadmin";
+
+  public static final String SLA_TABLE = "sla_metrics";
+  public static final String SLA_ENABLE = "hbase.client.sla.enable";
+  public static final String SLA_PERIOD = "hbase.client.sla.period";
+  public static final boolean SLA_ENABLE_DEFAULT = false;
+  public static final int SLA_PERIOD_DEFAULT = 60000;
 }

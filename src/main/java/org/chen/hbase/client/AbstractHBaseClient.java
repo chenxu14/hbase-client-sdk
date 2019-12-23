@@ -37,6 +37,7 @@ public abstract class AbstractHBaseClient implements IConfigChangeListener, HBas
   protected final Map<String, TableInfo> tables; // tableName -> TableInfo
   protected final Map<String, ClusterInfo> clusters; // clusterName -> ClusterInfo
   protected final ChoreService choreService;
+  protected MetricsChore metricsChore;
   protected final Configuration conf;
   protected final boolean hasWatcher;
   protected ConfigClient mtcli;
@@ -45,7 +46,7 @@ public abstract class AbstractHBaseClient implements IConfigChangeListener, HBas
   protected AbstractHBaseClient() throws IOException {
     tables = new ConcurrentHashMap<>();
     clusters = new ConcurrentHashMap<>();
-    choreService = new ChoreService("CloudTable");
+    choreService = new ChoreService("HBaseClientSDK");
     conf = ConfUtil.initConf();
     this.hasWatcher = conf.getBoolean(MyConstants.CLIENT_WATCH_TABLE, true);
 
@@ -61,6 +62,7 @@ public abstract class AbstractHBaseClient implements IConfigChangeListener, HBas
 
     initAuthChore();
     initHotTable();
+    initMetricsChore();
     registerShutdownHook();
   }
 
@@ -77,15 +79,28 @@ public abstract class AbstractHBaseClient implements IConfigChangeListener, HBas
   }
 
   /**
+   * period upload metrics to falcon
+   */
+  private void initMetricsChore() {
+    if (this.tables.containsKey(MyConstants.SLA_TABLE)) {
+      int period = conf.getInt(MyConstants.SLA_PERIOD, MyConstants.SLA_PERIOD_DEFAULT);
+      try {
+        metricsChore = new MetricsChore(this, period, conf);
+        choreService.scheduleChore(metricsChore);
+      } catch (Exception e) {
+        LOG.warn("Bypass metrics chore scheduler, because exception occured when instance MetricsChore.", e);
+      }
+    }
+  }
+
+  /**
    * setup connections and warm up region locations that configured in hbase.client.hottable
    */
   protected void initHotTable() throws IOException {
-    String hottables = conf.get(MyConstants.CLIENT_HOTTABLE);
-    if (hottables != null && !"".equals(hottables)) {
-      for (String tableName : hottables.split(",")) {
-        initTable(tableName.trim());
-      }
-      LOG.info("successfully init hot tables: " + hottables);
+    boolean slaEnable = conf.getBoolean(MyConstants.SLA_ENABLE, MyConstants.SLA_ENABLE_DEFAULT);
+    if (slaEnable) {
+      initTable(MyConstants.SLA_TABLE);
+      LOG.info("successfully init sla_metrics.");
     }
   }
 
@@ -282,8 +297,9 @@ public abstract class AbstractHBaseClient implements IConfigChangeListener, HBas
     throw new UnsupportedOperationException("Aggregation operation not supported.");  
   }
 
-  protected void exceptionCallback(Exception e) throws IOException {
+  protected void exceptionCallback(String tableName, Exception e) throws IOException {
     // do some exception callback
+    this.metricsChore.updateRpc(tableName, 60000);
     throw new IOException(e);
   }
 }

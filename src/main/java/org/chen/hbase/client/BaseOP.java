@@ -34,7 +34,7 @@ public abstract class BaseOP extends AbstractHBaseClient {
     try {
       table.put(put);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       table.close();
     }
@@ -46,7 +46,7 @@ public abstract class BaseOP extends AbstractHBaseClient {
     try {
       mutator.mutate(put);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     }
   }
 
@@ -56,7 +56,7 @@ public abstract class BaseOP extends AbstractHBaseClient {
     try {
       table.put(puts);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       table.close();
     }
@@ -68,7 +68,7 @@ public abstract class BaseOP extends AbstractHBaseClient {
     try {
       mutator.mutate(puts);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     }
   }
 
@@ -82,28 +82,39 @@ public abstract class BaseOP extends AbstractHBaseClient {
 
   @Override
   public Result get(String tableName, Get get) throws IOException {
+    long startTime = System.currentTimeMillis();
     Table table = getTable(tableName);
     Result res = null;
     try {
       res = table.get(get);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       table.close();
+      long duration = System.currentTimeMillis() - startTime;
+      int cells = res.rawCells().length;
+      metricsChore.updateRpc(tableName, cells == 0 ? duration : duration / cells);
     }
     return res;
   }
 
   @Override
   public Result[] get(String tableName, List<Get> gets) throws IOException {
+    long startTime = System.currentTimeMillis();
     Table table = getTable(tableName);
     Result[] res = null;
     try {
       res = table.get(gets);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       table.close();
+      long duration = System.currentTimeMillis() - startTime;
+      int cells = 0;
+      for (Result r : res) {
+        cells += r.rawCells().length;
+      }
+      metricsChore.updateRpc(tableName, cells == 0 ? duration : duration / cells);
     }
     return res;
   }
@@ -114,7 +125,7 @@ public abstract class BaseOP extends AbstractHBaseClient {
     try {
       table.delete(delete);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       table.close();
     }
@@ -126,7 +137,7 @@ public abstract class BaseOP extends AbstractHBaseClient {
     try {
       table.delete(deletes);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       table.close();
     }
@@ -162,7 +173,7 @@ public abstract class BaseOP extends AbstractHBaseClient {
     try {
       res = table.increment(increment);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       table.close();
     }
@@ -176,7 +187,7 @@ public abstract class BaseOP extends AbstractHBaseClient {
     try {
       res = table.exists(get);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       table.close();
     }
@@ -190,7 +201,7 @@ public abstract class BaseOP extends AbstractHBaseClient {
     try {
       res = table.existsAll(gets);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       table.close();
     }
@@ -206,7 +217,7 @@ public abstract class BaseOP extends AbstractHBaseClient {
       res = table.checkAndPut(Bytes.toBytes(row), Bytes.toBytes(family), Bytes.toBytes(qualifier),
           value, put);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       table.close();
     }
@@ -222,7 +233,7 @@ public abstract class BaseOP extends AbstractHBaseClient {
       res = table.checkAndPut(Bytes.toBytes(row), Bytes.toBytes(family), Bytes.toBytes(qualifier), compareOp,
           value, put);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       table.close();
     }
@@ -236,7 +247,7 @@ public abstract class BaseOP extends AbstractHBaseClient {
     try {
       table.batch(actions, results);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       table.close();
     }
@@ -249,7 +260,7 @@ public abstract class BaseOP extends AbstractHBaseClient {
     try {
       res = table.append(append);
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       table.close();
     }

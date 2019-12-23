@@ -59,7 +59,7 @@ public class KafkaClient extends AbstractHBaseClient {
       producer.flush();
       res.get();
     } catch (Exception e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     } finally {
       bb.release();
     }
@@ -90,7 +90,7 @@ public class KafkaClient extends AbstractHBaseClient {
         }
       });
     } catch (IOException e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     }
   }
 
@@ -133,7 +133,7 @@ public class KafkaClient extends AbstractHBaseClient {
         }
       }
     } catch (Exception e) {
-      exceptionCallback(e);
+      exceptionCallback(tableName, e);
     }
   }
 

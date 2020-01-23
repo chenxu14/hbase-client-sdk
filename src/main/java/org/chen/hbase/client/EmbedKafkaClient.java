@@ -35,7 +35,7 @@ public class EmbedKafkaClient {
     Properties props = new Properties();
     props.put("bootstrap.servers", kafkaServers);
     props.put("acks", hbaseClient.getConf().get("kafka.acks", "all"));
-    props.put("delivery.timeout.ms", hbaseClient.getConf().get("kafka.delivery.timeout.ms", "35000"));
+    props.put("delivery.timeout.ms", hbaseClient.getConf().get("kafka.delivery.timeout.ms", "60000"));
     props.put("request.timeout.ms", hbaseClient.getConf().get("kafka.request.timeout.ms", "15000"));
     props.put("key.serializer", "org.apache.kafka.common.serialization.ByteBufferSerializer");
     props.put("value.serializer", "org.apache.kafka.common.serialization.ByteBufferSerializer");
@@ -56,9 +56,7 @@ public class EmbedKafkaClient {
           KafkaUtil.getTablePartition(Bytes.toString(mutation.getRow()), partitionCount),
           org.apache.kafka.common.utils.Bytes.EMPTY_BUFFER, // now WALKey needed now
           bb.nioBuffer());
-      Future<RecordMetadata> res = producer.send(record);
-      producer.flush();
-      res.get();
+      producer.send(record).get();
     } catch (Exception e) {
       hbaseClient.exceptionCallback(tableName, e);
     } finally {
@@ -127,11 +125,8 @@ public class EmbedKafkaClient {
           }
         }
       }
-      if (!async) {
-        producer.flush();
-        if (last != null) {
-          last.get();
-        }
+      if (!async && last != null) {
+        last.get();
       }
     } catch (Exception e) {
       hbaseClient.exceptionCallback(tableName, e);

@@ -55,9 +55,7 @@ public class KafkaClient extends AbstractHBaseClient {
           KafkaUtil.getTablePartition(Bytes.toString(mutation.getRow()), partitionCount),
           org.apache.kafka.common.utils.Bytes.EMPTY_BUFFER, // now WALKey needed now
           bb.nioBuffer());
-      Future<RecordMetadata> res = producer.send(record);
-      producer.flush();
-      res.get();
+      producer.send(record).get();
     } catch (Exception e) {
       exceptionCallback(tableName, e);
     } finally {
@@ -126,11 +124,8 @@ public class KafkaClient extends AbstractHBaseClient {
           }
         }
       }
-      if (!async) {
-        producer.flush();
-        if (last != null) {
-          last.get();
-        }
+      if (!async && last != null) {
+        last.get();
       }
     } catch (Exception e) {
       exceptionCallback(tableName, e);
